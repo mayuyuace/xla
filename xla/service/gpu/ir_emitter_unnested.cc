@@ -1286,7 +1286,6 @@ absl::Status IrEmitterUnnested::EmitCholeskyThunk(const HloInstruction* instr) {
 absl::Status IrEmitterUnnested::EmitCustomCallThunk(
     const HloCustomCallInstruction* instr) {
   const std::string& call_target_name = instr->custom_call_target();
-
   // Typed FFI custom calls is a replacement for legacy custom calls with
   // a rich type safe API. It's under construction and not fully supported.
   bool is_ffi_custom_call =
@@ -1302,19 +1301,19 @@ absl::Status IrEmitterUnnested::EmitCustomCallThunk(
   bool found_custom_call = !is_ffi_custom_call && call_target != nullptr;
   bool found_ffi_handler = is_ffi_custom_call && registration.ok();
 
-  if (!found_custom_call && !found_ffi_handler) {
-    auto& debug_options = ir_emitter_context_->debug_options();
+  // if (!found_custom_call && !found_ffi_handler) {
+  //   auto& debug_options = ir_emitter_context_->debug_options();
 
-    // If true, then all custom calls that are not found in custom call or FFI
-    // registries will become no-op (we don't emit any thunks for them).
-    if (debug_options.xla_gpu_mock_custom_calls()) {
-      return absl::OkStatus();
-    }
+  //   // If true, then all custom calls that are not found in custom call or FFI
+  //   // registries will become no-op (we don't emit any thunks for them).
+  //   if (debug_options.xla_gpu_mock_custom_calls()) {
+  //     return absl::OkStatus();
+  //   }
 
-    return absl::UnimplementedError(
-        absl::StrCat("No registered implementation for custom call to ",
-                     call_target_name, " for platform ", platform_name()));
-  }
+  //   return absl::UnimplementedError(
+  //       absl::StrCat("No registered implementation for custom call to ",
+  //                    call_target_name, " for platform ", platform_name()));
+  // }
 
   using Slices = std::vector<std::optional<CustomCallThunk::Slice>>;
 
@@ -2896,6 +2895,9 @@ absl::Status IrEmitterUnnested::EmitHloInstruction(
     case HloOpcode::kCustomCall: {
       auto* custom_call = Cast<HloCustomCallInstruction>(instr);
       if (IsLegacyCublasMatmul(*instr)) {
+        const_cast<HloCustomCallInstruction*>(custom_call)
+            ->set_api_version(CustomCallApiVersion::API_VERSION_TYPED_FFI);
+        return EmitCustomCallThunk(custom_call);
         return EmitGemmThunk(custom_call);
       }
 #if GOOGLE_CUDA || TF_HIPBLASLT
