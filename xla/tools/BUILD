@@ -28,6 +28,10 @@ load(
     "tsl_gpu_library",
 )
 load("//xla/tsl:tsl.default.bzl", "filegroup")
+load(
+    "@local_config_sycl//sycl:build_defs.bzl",
+    "if_sycl",
+)
 
 package(
     # copybara:uncomment default_applicable_licenses = ["//tensorflow:license"],
@@ -623,6 +627,8 @@ xla_cc_binary(
         "//xla/service:gpu_plugin",
     ]) + if_cuda([
         "//xla/stream_executor:cuda_platform",
+    ]) + if_sycl([
+        "//xla/stream_executor:sycl_platform",
     ]),
 )
 

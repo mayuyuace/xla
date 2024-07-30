@@ -1188,6 +1188,14 @@ struct BitPatternToValue {
   return ret;
 }
 
+absl::Status GpuDriver::LoadLevelzero(GpuContext* context,
+                                      const char* spir_contents,
+                                      const size_t size,
+                                      CUmodule* module) {
+  return absl::InternalError(
+      "Feature not supported on CUDA platform (LoadSpirv)");
+}
+
 /* static */ absl::Status GpuDriver::SynchronousMemsetUint8(
     GpuContext* context, hipDeviceptr_t location, uint8 value, size_t size) {
   ScopedActivateContext activation{context};
