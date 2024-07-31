@@ -43,8 +43,8 @@ cc_library(
     deps = [
         "@com_google_absl//absl/strings",
         "@xla//xla/tsl/util:env_var",
+        "@local_config_sycl//sycl",
         "@local_config_sycl//sycl:sycl_headers",
-        "@local_config_sycl//sycl:level_zero",
     ],
 )
 
@@ -184,6 +184,7 @@ cc_library(
         "@xla//xla/stream_executor/platform",
         "@xla//xla/stream_executor/platform:dso_loader",
         "@xla//xla/stream_executor/gpu:gpu_command_buffer",
+        "@xla//xla/stream_executor/gpu:gpu_timer",
         "@com_google_absl//absl/strings:str_format",
         "@tsl//tsl/platform:fingerprint",
     ],

@@ -507,6 +507,14 @@ GpuDriver::GraphGetMemAllocNodeParams(GpuGraphNodeHandle node) {
   return absl::OkStatus();
 }
 
+/* static */ bool GpuDriver::AddStreamCallback(GpuContext* context,
+                                               sycl::queue* stream,
+                                               StreamCallback callback,
+                                               void* data) {
+  LOG(ERROR) << "Unimplement unable to add host callback in SYCL";
+  return false;
+}
+
 /* static */ bool GpuDriver::CreateStream(GpuContext* context,
                                           sycl::queue** stream, int priority) {
   SYCLError_t res;
@@ -849,6 +857,13 @@ GpuDriver::GraphGetMemAllocNodeParams(GpuGraphNodeHandle node) {
   }
 
   return device_count;
+}
+
+absl::StatusOr<MemoryType> GpuDriver::GetPointerMemorySpace(
+    void* pointer) {
+  return absl::Status{
+      absl::StatusCode::kInternal,
+      absl::StrCat("Unimplement to query device pointer for memory space in SYCL")};
 }
 
 /* static */ absl::Status GpuDriver::GetComputeCapability(int* cc_major,

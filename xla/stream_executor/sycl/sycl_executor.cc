@@ -38,6 +38,7 @@ limitations under the License.
 #include "tsl/platform/statusor.h"
 #include "xla/tsl/util/env_var.h"
 #include "tsl/platform/fingerprint.h"
+#include "xla/stream_executor/gpu/gpu_timer.h"
 #include "xla/stream_executor/platform.h"
 #include "xla/stream_executor/platform/initialize.h"
 #include "xla/stream_executor/platform/port.h"
@@ -169,6 +170,15 @@ absl::Status GpuExecutor::GetKernel(const MultiKernelLoaderSpec& spec,
   kernel->set_metadata(kernel_metadata);
   kernel->set_name(kernel_name);
   return absl::OkStatus();
+}
+
+absl::StatusOr<std::unique_ptr<EventBasedTimer>>
+GpuExecutor::CreateEventBasedTimer(GpuStream* stream, bool use_delay_kernel) {
+  TF_ASSIGN_OR_RETURN(auto start_event, CreateGpuEvent(/*allow_timing=*/true));
+  TF_ASSIGN_OR_RETURN(auto stop_event, CreateGpuEvent(/*allow_timing=*/true));
+  TF_RETURN_IF_ERROR(start_event->Record(stream->gpu_stream()));
+  return std::make_unique<GpuTimer>(gpu_context(), std::move(start_event),
+                                    std::move(stop_event), stream);
 }
 
 bool GpuExecutor::UnloadGpuBinary(const void* gpu_binary) {
@@ -350,6 +360,10 @@ void GpuExecutor::Deallocate(DeviceMemoryBase* mem) {
   GpuDriver::DeviceDeallocate(context_, mem->opaque());
 }
 
+bool GpuExecutor::SynchronizeAllActivity(){
+  return GpuDriver::SynchronizeContext(context_);
+}
+
 absl::Status GpuExecutor::SynchronousMemZero(DeviceMemoryBase* location,
                                             uint64_t size) {
   if (reinterpret_cast<uintptr_t>(location->opaque()) % 4 == 0 &&
@@ -456,6 +470,38 @@ fft::FftSupport* GpuExecutor::AsFft() {
   auto fft = status.value()(this);
   fft_.reset(fft);
   return fft_.get();
+}
+
+absl::StatusOr<std::unique_ptr<GpuEvent>> GpuExecutor::CreateGpuEvent(
+    bool allow_timing) {
+  auto gpu_event = std::make_unique<SYCLEvent>(gpu_context());
+  TF_RETURN_IF_ERROR(gpu_event->Init(allow_timing));
+  return std::move(gpu_event);
+}
+
+absl::StatusOr<std::unique_ptr<Event>> GpuExecutor::CreateEvent(){
+  return CreateGpuEvent(/*allow_timing=*/false);
+}
+
+absl::StatusOr<std::unique_ptr<Stream>> GpuExecutor::CreateStream(
+      std::optional<std::variant<StreamPriority, int>> priority){
+  auto gpu_stream = std::make_unique<GpuStream>(this);
+  if (priority.has_value()) {
+    if (std::holds_alternative<StreamPriority>(*priority)) {
+      gpu_stream->SetPriority(std::get<StreamPriority>(*priority));
+    } else {
+      gpu_stream->SetPriority(std::get<int>(*priority));
+    }
+  }
+  absl::MutexLock l(&alive_gpu_streams_mu_);
+  bool init_worked = gpu_stream->Init();
+  if (init_worked) {
+    auto platform_specific_stream = gpu_stream->platform_specific_stream();
+    alive_gpu_streams_[platform_specific_stream] = gpu_stream.get();
+    return std::move(gpu_stream);
+  } else {
+    return absl::InvalidArgumentError("Failed to initialize gpu stream");
+  }
 }
 
 bool GpuExecutor::CanEnablePeerAccessTo(StreamExecutor* other) {
