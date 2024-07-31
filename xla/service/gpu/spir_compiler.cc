@@ -40,7 +40,6 @@ limitations under the License.
 #include "xla/service/gpu/cudnn_fused_conv_rewriter.h"
 #include "xla/service/gpu/cudnn_fused_mha_rewriter.h"
 #include "xla/service/gpu/cusolver_rewriter.h"
-#include "xla/service/gpu/gemm_impl_picker.h"
 #include "xla/service/gpu/gpu_conv_padding_legalization.h"
 #include "xla/service/gpu/gpu_conv_rewriter.h"
 #include "xla/service/gpu/gpu_layout_assignment.h"
@@ -203,11 +202,6 @@ absl::Status SPIRCompiler::OptimizeHloPostLayoutAssignment(
         !hlo_module->config().debug_options().xla_gpu_enable_fast_min_max());
     alg_sim_options.set_enable_unconditional_reduce_of_concat_replacement(
         false);
-    if (debug_options.xla_gpu_normalize_layouts()) {
-      mha_fusion_pipeline.AddPass<ReshapeDecomposer>();
-      mha_fusion_pipeline.AddPass<HloPassFix<MoveCopyToUsers>>();
-      mha_fusion_pipeline.AddPass<LayoutNormalization>();
-    }
     mha_fusion_pipeline.AddPass<HloCSE>(/*is_layout_sensitive=*/true);
     mha_fusion_pipeline.AddPass<HloPassFix<AlgebraicSimplifier>>(
         alg_sim_options);
@@ -249,8 +243,8 @@ absl::Status SPIRCompiler::OptimizeHloPostLayoutAssignment(
 absl::Status SPIRCompiler::AddConvAndGemmAutotuningPasses(
     HloPassPipeline* pipeline, HloModule* hlo_module,
     AutotuneConfig& autotune_config, tsl::thread::ThreadPool* thread_pool) {
-  pipeline->AddPass<GemmAlgorithmPicker>(autotune_config);
-  return OkStatus();
+  // SYCL TODO
+  return absl::OkStatus();
 }
 
 SPIRCompiler::SPIRCompiler()

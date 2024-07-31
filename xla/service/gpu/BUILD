@@ -1947,9 +1947,9 @@ cc_library(
 
 cc_library(
     name = "cusolver_rewriter",
-    srcs = if_gpu_is_configured(["cusolver_rewriter.cc"]),
-    hdrs = if_gpu_is_configured(["cusolver_rewriter.h"]),
-    deps = if_gpu_is_configured([
+    srcs = if_cuda_or_rocm(["cusolver_rewriter.cc"]),
+    hdrs = if_cuda_or_rocm(["cusolver_rewriter.h"]),
+    deps = if_cuda_or_rocm([
         ":cusolver_context",
         ":ir_emission_utils",
         "@com_google_absl//absl/algorithm:container",
@@ -3658,10 +3658,9 @@ cc_library(
         "spir_compiler.h",
     ],
     deps = [
-        "@intel_extension_for_openxla//xla/service/gpu:gemm_impl_picker",
-        "@intel_extension_for_openxla//xla/service/gpu:redundant_convert_mover",
-        "@intel_extension_for_openxla//xla/stream_executor/sycl:hw_info",
-        "@intel_extension_for_openxla//xla/stream_executor/sycl:sycl_platform_id",
+        "//xla/service/gpu:redundant_convert_mover",
+        "//xla/stream_executor/sycl:hw_info",
+        "//xla/stream_executor/sycl:sycl_platform_id",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/types:optional",
@@ -3698,7 +3697,7 @@ cc_library(
     ],
     deps = [
         ":spir_compiler_impl",
-        "@intel_extension_for_openxla//xla/stream_executor/sycl:sycl_platform_id",
+        "//xla/stream_executor/sycl:sycl_platform_id",
         "@tsl//tsl/platform:path",
     ],
     alwayslink = True,  # Contains compiler registration
@@ -6035,9 +6034,9 @@ xla_cc_test(
 
 cc_library(
     name = "triton_fusion_numerics_verifier",
-    srcs = if_gpu_is_configured(["triton_fusion_numerics_verifier.cc"]),
-    hdrs = if_gpu_is_configured(["triton_fusion_numerics_verifier.h"]),
-    deps = if_gpu_is_configured([
+    srcs = if_cuda_or_rocm(["triton_fusion_numerics_verifier.cc"]),
+    hdrs = if_cuda_or_rocm(["triton_fusion_numerics_verifier.h"]),
+    deps = if_cuda_or_rocm([
         ":autotuner_compile_util",
         ":autotuner_util",
         ":backend_configs_cc",
@@ -6225,5 +6224,23 @@ xla_cc_test(
         "@com_google_absl//absl/strings:string_view",
         "@com_google_googletest//:gtest_main",
         "@tsl//tsl/platform:statusor",
+    ],
+)
+
+cc_library(
+    name = "redundant_convert_mover",
+    srcs = ["redundant_convert_mover.cc"],
+    hdrs = ["redundant_convert_mover.h"],
+    deps = [
+        "@tsl//tsl/platform:errors",
+        "@tsl//tsl/platform:statusor",
+        "@xla//xla:comparison_util",
+        "@xla//xla:literal_util",
+        "@xla//xla:permutation_util",
+        "@xla//xla:shape_util",
+        "@xla//xla/hlo/ir:hlo",
+        "@xla//xla/service:hlo_creation_utils",
+        "@xla//xla/service:hlo_pass",
+        "@xla//xla/service:pattern_matcher",
     ],
 )
