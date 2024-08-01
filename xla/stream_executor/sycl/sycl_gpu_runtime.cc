@@ -82,9 +82,7 @@ class DevicePool {
   DevicePool() : current_ordinal_(0) {}
 
   static sycl::context& getDeviceContext() {
-    VLOG(0) << "getDeviceContext:0";
     static sycl::context context(DevicePool::GetDevicesPool());
-    VLOG(0) << "getDeviceContext:1";
     return context;
   }
 
