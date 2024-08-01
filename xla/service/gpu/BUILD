@@ -3231,7 +3231,6 @@ cc_library(
         ":topk_specializer",
         ":topk_splitter",
         ":tree_reduction_rewriter",
-        ":triton_fusion_numerics_verifier",
         ":variadic_op_splitter",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -3394,6 +3393,8 @@ cc_library(
         # go/keep-sorted end
     ]) + xla_internal(["service:export_hlo"]) + if_google([
         "//xla/hlo/experimental/auto_sharding",
+    ]) + if_cuda_or_rocm([
+        ":triton_fusion_numerics_verifier",
     ]),
 )
 
@@ -6034,9 +6035,9 @@ xla_cc_test(
 
 cc_library(
     name = "triton_fusion_numerics_verifier",
-    srcs = if_gpu_is_configured(["triton_fusion_numerics_verifier.cc"]),
-    hdrs = if_gpu_is_configured(["triton_fusion_numerics_verifier.h"]),
-    deps = if_gpu_is_configured([
+    srcs = if_cuda_or_rocm(["triton_fusion_numerics_verifier.cc"]),
+    hdrs = if_cuda_or_rocm(["triton_fusion_numerics_verifier.h"]),
+    deps = if_cuda_or_rocm([
         ":autotuner_compile_util",
         ":autotuner_util",
         ":backend_configs_cc",
