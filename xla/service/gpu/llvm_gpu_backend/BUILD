@@ -47,6 +47,7 @@ cc_library(
         "//xla/service/gpu:metrics",
         "//xla/service/llvm_ir:llvm_command_line_options",
         "//xla/service/llvm_ir:llvm_type_conversion_util",
+        "//xla/service/llvm_ir:llvm_util",
         "//xla/stream_executor:device_description",
         "//xla/tsl/util:env_var",
         "@com_google_absl//absl/base",
@@ -91,6 +92,7 @@ cc_library(
     ]) + if_rocm_is_configured([
         "@local_config_rocm//rocm:rocm_headers",
         "@llvm-project//llvm:AMDGPUCodeGen",
+        "@llvm-project//llvm:AMDGPUAsmParser",
     ]) + if_sycl_is_configured([
         "@spirv_llvm_translator//:spirv_llvm_translator",
     ]),

@@ -1947,9 +1947,9 @@ cc_library(
 
 cc_library(
     name = "cusolver_rewriter",
-    srcs = if_cuda_or_rocm(["cusolver_rewriter.cc"]),
-    hdrs = if_cuda_or_rocm(["cusolver_rewriter.h"]),
-    deps = if_cuda_or_rocm([
+    srcs = if_gpu_is_configured(["cusolver_rewriter.cc"]),
+    hdrs = if_gpu_is_configured(["cusolver_rewriter.h"]),
+    deps = if_gpu_is_configured([
         ":cusolver_context",
         ":ir_emission_utils",
         "@com_google_absl//absl/algorithm:container",
@@ -3681,7 +3681,7 @@ cc_library(
         "//xla/service:tuple_simplifier",
         "//xla/service/gpu:cudnn_fused_conv_rewriter",
         "//xla/service/gpu:cudnn_fused_mha_rewriter",
-        "//xla/service/gpu:cusolver_rewriter",
+        # "//xla/service/gpu:cusolver_rewriter",
         "//xla/service/gpu:gpu_compiler",
         "//xla/service/gpu:gpu_conv_padding_legalization",
         "//xla/service/gpu:target_constants",
@@ -4389,12 +4389,12 @@ xla_cc_test(
 
 cc_library(
     name = "buffer_comparator",
-    srcs = if_cuda_or_rocm(["buffer_comparator.cc"]),
-    hdrs = if_cuda_or_rocm(["buffer_comparator.h"]),
+    srcs = if_gpu_is_configured(["buffer_comparator.cc"]),
+    hdrs = if_gpu_is_configured(["buffer_comparator.h"]),
     local_defines = if_cuda_is_configured(["GOOGLE_CUDA=1"]) + if_rocm_is_configured([
         "TENSORFLOW_USE_ROCM=1",
     ]),
-    deps = if_cuda_or_rocm([
+    deps = if_gpu_is_configured([
         # keep sorted
         ":buffer_comparator_kernel",
         ":gpu_asm_opts_util",
@@ -4423,7 +4423,7 @@ cc_library(
 
 gpu_kernel_library(
     name = "buffer_comparator_kernel",
-    srcs = if_gpu_is_configured(["buffer_comparator.cu.cc"]),
+    srcs = if_cuda_or_rocm(["buffer_comparator.cu.cc"]),
     copts = rocm_copts(),
     local_defines = if_cuda_is_configured(["GOOGLE_CUDA=1"]) + if_rocm_is_configured([
         "TENSORFLOW_USE_ROCM=1",
@@ -6034,9 +6034,9 @@ xla_cc_test(
 
 cc_library(
     name = "triton_fusion_numerics_verifier",
-    srcs = if_cuda_or_rocm(["triton_fusion_numerics_verifier.cc"]),
-    hdrs = if_cuda_or_rocm(["triton_fusion_numerics_verifier.h"]),
-    deps = if_cuda_or_rocm([
+    srcs = if_gpu_is_configured(["triton_fusion_numerics_verifier.cc"]),
+    hdrs = if_gpu_is_configured(["triton_fusion_numerics_verifier.h"]),
+    deps = if_gpu_is_configured([
         ":autotuner_compile_util",
         ":autotuner_util",
         ":backend_configs_cc",

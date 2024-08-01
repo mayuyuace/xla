@@ -39,7 +39,7 @@ limitations under the License.
 #include "xla/service/gpu/cublas_cudnn.h"
 #include "xla/service/gpu/cudnn_fused_conv_rewriter.h"
 #include "xla/service/gpu/cudnn_fused_mha_rewriter.h"
-#include "xla/service/gpu/cusolver_rewriter.h"
+// #include "xla/service/gpu/cusolver_rewriter.h"
 #include "xla/service/gpu/gpu_conv_padding_legalization.h"
 #include "xla/service/gpu/gpu_conv_rewriter.h"
 #include "xla/service/gpu/gpu_layout_assignment.h"
@@ -119,9 +119,10 @@ absl::Status SPIRCompiler::OptimizeHloConvolutionCanonicalization(
   ConvBfloat16Support conv_bf16_support;
   pipeline.AddPass<FloatNormalization>(&conv_bf16_support);
 
-  pipeline.AddPass<GpusolverRewriter>();
-  pipeline.AddPass<GpuConvRewriter>();
-  pipeline.AddPass<CudnnFusedConvRewriter>(cuda_compute_capability);
+  // pipeline.AddPass<GpusolverRewriter>();
+  pipeline.AddPass<GpuConvRewriter>(cuda_compute_capability);
+  pipeline.AddPass<CudnnFusedConvRewriter>(cuda_compute_capability, dnn_version,
+                                           GetToolkitVersion());
   pipeline.AddPass<GpuConvPaddingLegalization>();
 
   // The conv padding/vectorization passes which we need to get rid of.  They

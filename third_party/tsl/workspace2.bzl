@@ -600,11 +600,11 @@ def _tf_repositories():
 
     tf_http_archive(
         name = "spirv_llvm_translator",
-        sha256 = "6fef53d7791b6f2485143f1d2ad6377dea5ad82bbc8a453bf0d277e93907a6d4",
-        strip_prefix = "SPIRV-LLVM-Translator-8878e7bfddbe2cbd86256c8e4e563a9f78a5e321",
+        sha256 = "d499769f4fd1e0ce9d4dbd3622ee7e3e641b5623dcdf811521e3e7c0bdb1e6c2",
+        strip_prefix = "SPIRV-LLVM-Translator-dad1f0eaab8047a4f73c50ed5f3d1694b78aae97",
         build_file = "//third_party/spirv_llvm_translator:spirv_llvm_translator.BUILD",
         patch_file = ["//third_party/spirv_llvm_translator:spirv_llvm_translator.patch"],
-        urls = tf_mirror_urls("https://github.com/KhronosGroup/SPIRV-LLVM-Translator/archive/8878e7bfddbe2cbd86256c8e4e563a9f78a5e321.tar.gz"),
+        urls = tf_mirror_urls("https://github.com/KhronosGroup/SPIRV-LLVM-Translator/archive/dad1f0eaab8047a4f73c50ed5f3d1694b78aae97.tar.gz"),
     )
 
 # buildifier: disable=unnamed-macro

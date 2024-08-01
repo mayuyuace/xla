@@ -1147,11 +1147,11 @@ std::unique_ptr<llvm::TargetMachine> SPIRGetTargetMachine(
   return nullptr;
 }
 
-Status SPIRTargetModuleLinker(llvm::Module* module,
+absl::Status SPIRTargetModuleLinker(llvm::Module* module,
                               se::GpuComputeCapability gpu_version,
                               const DebugOptions& debug_options,
                               const std::string& device_bitcode_dir_path) {
-  return OkStatus();
+  return absl::OkStatus();
 }
 
 StatusOr<std::string> EmitModuleToSpir(llvm::Module* module,
