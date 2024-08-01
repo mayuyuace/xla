@@ -82,7 +82,9 @@ class DevicePool {
   DevicePool() : current_ordinal_(0) {}
 
   static sycl::context& getDeviceContext() {
+    VLOG(0) << "getDeviceContext:0";
     static sycl::context context(DevicePool::GetDevicesPool());
+    VLOG(0) << "getDeviceContext:1";
     return context;
   }
 
@@ -295,6 +297,11 @@ class SYCLStreamPool {
 
 SYCLError_t SYCLGetContext(sycl::context** context) {
   *context = &DevicePool::getDeviceContext();
+  if(context == nullptr){
+    return SYCL_ERROR_INVALID_POINTER;
+  }else{
+    return SYCL_SUCCESS;
+  }
 }
 
 SYCLError_t SYCLGetDeviceCount(int* count) {

@@ -192,10 +192,43 @@ cc_library(
 )
 
 cc_library(
+    name = "onednn_plugin",
+    srcs = if_sycl_is_configured(["sycl_dnn.cc"]),
+    hdrs = if_sycl_is_configured(["sycl_dnn.h"]),
+    visibility = ["//visibility:public"],
+    deps = if_sycl_is_configured([
+        ":sycl_driver",
+        ":sycl_executor",
+        ":sycl_platform_id",
+        "@xla//xla/stream_executor",
+        "@xla//xla/stream_executor:dnn",
+        "@xla//xla/stream_executor:plugin_registry",
+        "@xla//xla/stream_executor:stream_executor_h",
+        "@xla//xla/stream_executor/gpu:gpu_executor_header",
+        "@xla//xla/stream_executor/gpu:gpu_timer",
+        "@xla//xla/stream_executor/platform",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/types:span",
+    ]),
+    alwayslink = True,
+)
+
+cc_library(
     name = "all_runtime",
     copts = tsl_copts(),
     visibility = ["//visibility:public"],
-    deps = if_sycl_is_configured([":sycl_platform"]),
+    deps = if_sycl_is_configured([
+        ":onednn_plugin",
+        ":sycl_platform",
+    ]),
     alwayslink = 1,
 )
 
