@@ -511,8 +511,19 @@ GpuDriver::GraphGetMemAllocNodeParams(GpuGraphNodeHandle node) {
                                                sycl::queue* stream,
                                                StreamCallback callback,
                                                void* data) {
-  LOG(ERROR) << "Unimplement unable to add host callback in SYCL";
-  return false;
+  // LOG(ERROR) << "Unimplement unable to add host callback in SYCL";
+  // return false;
+
+  auto callback_function = std::function<void()>([data]() {
+    auto* callback_ptr =
+        reinterpret_cast<absl::AnyInvocable<void() &&>*>(data);
+    std::move (*callback_ptr)();
+    delete callback_ptr;
+  });
+
+  stream->submit(
+      [&](auto& cgh) { cgh.host_task(std::move(callback_function)); });
+  return true;
 }
 
 /* static */ bool GpuDriver::CreateStream(GpuContext* context,
