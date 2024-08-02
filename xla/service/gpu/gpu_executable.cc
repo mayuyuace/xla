@@ -384,6 +384,9 @@ absl::Status ExecuteThunks(
   se::StreamExecutor* executor = main_stream->parent();
   stream_executor::StreamPriority stream_priority =
       stream_executor::StreamPriority::Default;
+#if TENSORFLOW_USE_SYCL
+  use_highest_priority_for_async_stream = false;
+#endif
   if (use_highest_priority_for_async_stream) {
     stream_priority = stream_executor::StreamPriority::Highest;
   }
