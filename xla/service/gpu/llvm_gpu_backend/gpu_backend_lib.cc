@@ -1157,6 +1157,7 @@ absl::Status SPIRTargetModuleLinker(llvm::Module* module,
 StatusOr<std::string> EmitModuleToSpir(llvm::Module* module,
                                        se::GpuComputeCapability gpu_version,
                                        const DebugOptions& debug_options) {
+#if TENSORFLOW_USE_SYCL
   SPIRV::TranslatorOpts::ExtensionsStatusMap ExtensionsStatus;
   SPIRV::TranslatorOpts opts(SPIRV::VersionNumber::MaximumVersion,
                              ExtensionsStatus);
@@ -1169,6 +1170,9 @@ StatusOr<std::string> EmitModuleToSpir(llvm::Module* module,
     return xla::Internal("Fails to convert LLVM as SPIR-V: %s", err);
   }
   return oss.str();
+#else
+  return absl::UnimplementedError("Not implemented for SYCL");
+#endif
 }
 
 void SPIRBackendInit(const DebugOptions& debug_options) {

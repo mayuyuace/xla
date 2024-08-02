@@ -29,11 +29,11 @@ limitations under the License.
 #include "xla/service/gpu/model/tiled_hlo_computation.h"
 #include "xla/stream_executor/device_description.h"
 
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#if !TENSORFLOW_USE_SYCL
 #include "xla/service/gpu/fusions/triton/triton_fusion_emitter.h"
 #else
 #include "absl/status/status.h"
-#endif // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#endif // TENSORFLOW_USE_SYCL
 namespace xla {
 namespace gpu {
 
