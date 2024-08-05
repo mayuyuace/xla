@@ -56,8 +56,6 @@ class SPIRCompiler : public GpuCompiler {
       se::GpuComputeCapability gpu_version, bool relocatable,
       const HloModule* debug_module, const CompileOptions& options) override;
 
-  static SPIRCompiler* CreateSPIRCompiler();
-
  private:
   SPIRCompiler(const SPIRCompiler&) = delete;
   SPIRCompiler& operator=(const SPIRCompiler&) = delete;

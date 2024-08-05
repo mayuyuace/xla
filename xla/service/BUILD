@@ -10,7 +10,6 @@ load(
 )
 load(
     "@local_config_sycl//sycl:build_defs.bzl",
-    "if_sycl",
     "if_sycl_is_configured",
 )
 load(

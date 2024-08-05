@@ -36,7 +36,6 @@ limitations under the License.
 #include "xla/service/gpu/cublas_cudnn.h"
 #include "xla/service/gpu/cudnn_fused_conv_rewriter.h"
 #include "xla/service/gpu/cudnn_fused_mha_rewriter.h"
-// #include "xla/service/gpu/cusolver_rewriter.h"
 #include "xla/service/gpu/gpu_conv_padding_legalization.h"
 #include "xla/service/gpu/gpu_conv_rewriter.h"
 #include "xla/service/gpu/gpu_layout_assignment.h"
@@ -277,11 +276,6 @@ SPIRCompiler::CompileTargetBinary(const HloModuleConfig& module_config,
   }
 
   return BackendCompileResult{"", std::move(spir)};
-}
-
-/*static*/ SPIRCompiler* SPIRCompiler::CreateSPIRCompiler() {
-  static auto compiler = absl::make_unique<SPIRCompiler>();
-  return compiler.get();
 }
 
 }  // namespace gpu

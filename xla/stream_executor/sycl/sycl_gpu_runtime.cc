@@ -113,10 +113,10 @@ class DevicePool {
 
  private:
   static std::vector<sycl::device>& GetDevicesPool() {
-    static std::once_flag init_device_flag;
+    static absl::once_flag init_device_flag;
     static std::vector<sycl::device> devices;
 
-    std::call_once(init_device_flag, []() {
+    absl::call_once(init_device_flag, []() {
       std::vector<sycl::device> root_devices;
       // Get root device list from platform list.
       auto platform_list = sycl::platform::get_platforms();
