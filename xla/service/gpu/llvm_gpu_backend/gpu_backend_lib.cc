@@ -80,6 +80,7 @@ limitations under the License.
 #include "xla/service/gpu/metrics.h"
 #include "xla/service/llvm_ir/llvm_command_line_options.h"
 #include "xla/service/llvm_ir/llvm_type_conversion_util.h"
+#include "xla/service/llvm_ir/llvm_util.h"
 #include "xla/stream_executor/device_description.h"
 #include "xla/tsl/util/env_var.h"
 #include "xla/util.h"
@@ -104,6 +105,11 @@ limitations under the License.
 #include "third_party/gpus/cuda/include/cuda.h"
 #include "xla/stream_executor/cuda/cuda_asm_compiler.h"
 #endif
+
+#if TENSORFLOW_USE_SYCL
+#include "LLVMSPIRVLib.h"
+#include "LLVMSPIRVOpts.h"
+#endif  // TENSORFLOW_USE_SYCL
 
 namespace xla {
 namespace gpu {
@@ -452,10 +458,12 @@ absl::Status LinkAndOptimizeModule(
   llvm::CGSCCAnalysisManager cgam;
   llvm::ModuleAnalysisManager mam;
 
-  fam.registerPass([&] { return target_machine->getTargetIRAnalysis(); });
+  if (target_machine)
+    fam.registerPass([&] { return target_machine->getTargetIRAnalysis(); });
 
   llvm::PipelineTuningOptions pto;
-  pto.SLPVectorization = true;
+  pto.SLPVectorization = false;
+  pto.LoopVectorization = false;
   pto.InlinerThreshold = inline_threshold;
 
   llvm::PassInstrumentationCallbacks pic;
@@ -1131,6 +1139,112 @@ absl::StatusOr<std::vector<uint8_t>> CompileToHsaco(
 }
 
 }  // namespace amdgpu
+
+namespace {
+std::unique_ptr<llvm::TargetMachine> SPIRGetTargetMachine(
+    llvm::Triple target_triple, se::GpuComputeCapability gpu_version,
+    const DebugOptions& debug_options) {
+  return nullptr;
+}
+
+absl::Status SPIRTargetModuleLinker(llvm::Module* module,
+                              se::GpuComputeCapability gpu_version,
+                              const DebugOptions& debug_options,
+                              const std::string& device_bitcode_dir_path) {
+  return absl::OkStatus();
+}
+
+StatusOr<std::string> EmitModuleToSpir(llvm::Module* module,
+                                       se::GpuComputeCapability gpu_version,
+                                       const DebugOptions& debug_options) {
+#if TENSORFLOW_USE_SYCL
+  SPIRV::TranslatorOpts::ExtensionsStatusMap ExtensionsStatus;
+  SPIRV::TranslatorOpts opts(SPIRV::VersionNumber::MaximumVersion,
+                             ExtensionsStatus);
+  opts.enableAllExtensions();  // enable all SPIR-V extension first
+
+  std::ostringstream oss;
+  std::string err;
+  bool success = llvm::writeSpirv(module, opts, oss, err);
+  if (!success) {
+    return xla::Internal("Fails to convert LLVM as SPIR-V: %s", err);
+  }
+  return oss.str();
+#else
+  return absl::UnimplementedError("Not implemented for SYCL");
+#endif
+}
+
+void SPIRBackendInit(const DebugOptions& debug_options) {
+
+  FeedLLVMWithFlags({"-slp-vectorize-hor=false"});
+
+  bool vec = true;
+  tsl::ReadBoolFromEnvVar("VECTORIZE", true, &vec);
+  if (vec) {
+    FeedLLVMWithFlags({
+        "-slp-min-reg-size=64",
+        "-slp-max-reg-size=64",
+    });
+  } else {
+    // TODO: sycl-opt disables all LLVM vectorization passes. Evaluate if it is
+    // needed.
+    FeedLLVMWithFlags({"-sycl-opt=1"});
+  }
+
+  llvm_ir::InitializeLLVMCommandLineOptions(
+      debug_options.xla_backend_extra_options());
+
+  llvm::PassRegistry* registry = llvm::PassRegistry::getPassRegistry();
+  InitializePasses(registry);
+}
+}  // namespace
+
+namespace spir {
+absl::StatusOr<std::vector<uint8_t>> CompileToSpir(
+    llvm::Module* module, se::GpuComputeCapability gpu_version,
+    const DebugOptions& debug_options) {
+  std::string libdevice_dir_path;
+  static absl::once_flag backend_init_flag;
+  absl::call_once(backend_init_flag, SPIRBackendInit, debug_options);
+
+  std::string spir;
+  {
+    XLA_SCOPED_LOGGING_TIMER("Compile module " + module->getName().str());
+
+    // If the module has no functions or globals, there's nothing to compile.
+    if (module->empty() && module->global_empty()) {
+      VLOG(2) << "Module '" << module->getName().str()
+              << "' is empty. Skipping compilation.";
+      return std::vector<uint8_t>();
+    }
+
+    // No SPIR target machine?
+    llvm::Triple default_target_triple("spir64-unknown-unknown");
+    std::unique_ptr<llvm::TargetMachine> target_machine =
+        SPIRGetTargetMachine(default_target_triple, gpu_version, debug_options);
+
+    bool opt = true;
+    tsl::ReadBoolFromEnvVar("SYCL_LLVM_OPT", true, &opt);
+    if (opt) {
+      // Link with libdevice, and optimize the LLVM module.
+      TF_RETURN_IF_ERROR(LinkAndOptimizeModule(
+          module, gpu_version, debug_options, libdevice_dir_path,
+          SPIRTargetModuleLinker, default_target_triple, target_machine.get(),
+          kDefaultInlineThreshold));
+    }
+
+#if 0
+    LOG(ERROR) << "Optimized IR before converting to spir\n" << llvm_ir::DumpToString(module);
+#endif
+
+    // Lower optimized LLVM module to SPIR.
+    TF_ASSIGN_OR_RETURN(spir,
+                        EmitModuleToSpir(module, gpu_version, debug_options));
+  }
+  return std::vector<uint8_t>(spir.begin(), spir.end());
+}
+}  // namespace spir
 
 }  // namespace gpu
 }  // namespace xla

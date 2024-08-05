@@ -86,6 +86,7 @@ limitations under the License.
 #include "xla/stream_executor/rocm/rocm_platform_id.h"
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_executor.h"
+#include "xla/stream_executor/sycl/sycl_platform_id.h"
 #include "xla/util.h"
 #include "tsl/platform/env.h"
 #include "tsl/platform/errors.h"
@@ -192,6 +193,8 @@ absl::Status GpuExecutable::CheckCompatibilityWithServiceExecutableRunOptions(
         << std::get<se::CudaComputeCapability>(gpu_version_).ToString()
         << "}, but was {" << std::get<se::CudaComputeCapability>(cc).ToString()
         << "}";
+  } else if (platform_id == stream_executor::sycl::kSyclPlatformId) {
+    // TODO: Add check.
   } else {
     return Internal("Unknown platform");
   }
@@ -381,6 +384,9 @@ absl::Status ExecuteThunks(
   se::StreamExecutor* executor = main_stream->parent();
   stream_executor::StreamPriority stream_priority =
       stream_executor::StreamPriority::Default;
+#if TENSORFLOW_USE_SYCL
+  use_highest_priority_for_async_stream = false;
+#endif
   if (use_highest_priority_for_async_stream) {
     stream_priority = stream_executor::StreamPriority::Highest;
   }

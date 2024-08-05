@@ -1302,6 +1302,14 @@ absl::Status GpuDriver::LoadHsaco(GpuContext* context,
       "Feature not supported on CUDA platform (LoadHsaco)");
 }
 
+absl::Status GpuDriver::LoadLevelzero(GpuContext* context,
+                                      const char* spir_contents,
+                                      const size_t size,
+                                      CUmodule* module) {
+  return absl::InternalError(
+      "Feature not supported on CUDA platform (LoadSpirv)");
+}
+
 absl::Status GpuDriver::SynchronousMemsetUint8(GpuContext* context,
                                                CUdeviceptr location,
                                                uint8_t value, size_t size) {

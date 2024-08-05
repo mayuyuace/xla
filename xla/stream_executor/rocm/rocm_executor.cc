@@ -414,6 +414,12 @@ absl::Status GpuExecutor::LoadModuleFromPtx(const char* ptx,
   LOG(FATAL) << "Feature not supported on ROCM platform (LoadModuleFromPtx)";
 }
 
+absl::Status GpuExecutor::LoadModuleFromSpir(const char* spir, const size_t size,
+                                             CUmodule* module) {
+  return absl::InternalError(
+      "Feature not supported on CUDA platform (LoadModuleFromSpir)");
+}
+
 absl::Status GpuExecutor::LoadModuleFromHsaco(const char* hsaco,
                                               hipModule_t* module) {
   uint64_t module_refcount;

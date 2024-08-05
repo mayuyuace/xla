@@ -6,6 +6,10 @@ load(
     "@tsl//tsl/platform/default:cuda_build_defs.bzl",
     "if_cuda_is_configured",
 )
+load(
+    "@local_config_sycl//sycl:build_defs.bzl",
+    "if_sycl_is_configured",
+)
 load("//xla:xla.bzl", "xla_cc_test")
 load("//xla/tsl:tsl.bzl", "internal_visibility")
 
@@ -43,6 +47,7 @@ cc_library(
         "//xla/service/gpu:metrics",
         "//xla/service/llvm_ir:llvm_command_line_options",
         "//xla/service/llvm_ir:llvm_type_conversion_util",
+        "//xla/service/llvm_ir:llvm_util",
         "//xla/stream_executor:device_description",
         "//xla/tsl/util:env_var",
         "@com_google_absl//absl/base",
@@ -88,6 +93,8 @@ cc_library(
         "@local_config_rocm//rocm:rocm_headers",
         "@llvm-project//llvm:AMDGPUCodeGen",
         "@llvm-project//llvm:AMDGPUAsmParser",
+    ]) + if_sycl_is_configured([
+        "@spirv_llvm_translator//:spirv_llvm_translator",
     ]),
 )
 

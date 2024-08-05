@@ -1,0 +1,20 @@
+diff --git a/lib/SPIRV/SPIRVInternal.h b/lib/SPIRV/SPIRVInternal.h
+index f8ae5afc..82139410 100644
+--- a/lib/SPIRV/SPIRVInternal.h
++++ b/lib/SPIRV/SPIRVInternal.h
+@@ -180,11 +180,12 @@ typedef SPIRVMap<Op, Op, IntBoolOpMapId> IntBoolOpMap;
+   "-v512:512:512-v1024:1024:1024"
+
+ enum SPIRAddressSpace {
+-  SPIRAS_Private,
++  SPIRAS_Generic,
+   SPIRAS_Global,
+-  SPIRAS_Constant,
++  SPIRAS_Internal,
+   SPIRAS_Local,
+-  SPIRAS_Generic,
++  SPIRAS_Constant,
++  SPIRAS_Private,
+   SPIRAS_GlobalDevice,
+   SPIRAS_GlobalHost,
+   SPIRAS_Input,
