@@ -18,15 +18,27 @@ limitations under the License.
 
 #if TENSORFLOW_USE_ROCM
 #include "rocm/include/hip/hip_runtime.h"
-#else
+#elif !TENSORFLOW_USE_SYCL
 #include "third_party/gpus/cuda/include/cuda.h"
 #endif
 #include "xla/service/custom_call_status.h"
 
 #if TENSORFLOW_USE_ROCM
 #define gpuStreamHandle hipStream_t
+#elif TENSORFLOW_USE_SYCL
+#define gpuStreamHandle ::sycl::queue*
 #else
 #define gpuStreamHandle CUstream
+#endif
+
+#if TENSORFLOW_USE_SYCL
+#if __has_include(<sycl/sycl.hpp>)
+#include <sycl/sycl.hpp>
+#elif __has_include(<CL/sycl.hpp>)
+#include <CL/sycl.hpp>
+#else
+#error "Unsupported compiler"
+#endif
 #endif
 
 namespace xla {
