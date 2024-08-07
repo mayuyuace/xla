@@ -67,6 +67,8 @@ void IrEmitterContext::emit_constant(int64_t num_elements,
       return llvm::ConstantAggregateZero::get(global_type);
     }
 
+    // SYCL: always set info.content.
+    info.content = content;
     std::vector<uint8_t> padded(kMinConstAllocationInBytes, 0);
     absl::c_copy(content.span(), padded.begin());
     return llvm::ConstantDataArray::get<uint8_t>(
@@ -77,8 +79,8 @@ void IrEmitterContext::emit_constant(int64_t num_elements,
   }();
 
   // Explicitly set global addrspace for SPIR backend.
-  int addrspace =
-      llvm::Triple(llvm_module_constants()->getTargetTriple()).isSPIR() ? 1 : 0;
+  auto is_spir = llvm::Triple(llvm_module_->getTargetTriple()).isSPIR();
+  int addrspace = is_spir ? 1 : 0;
   // These globals will be looked up by name by GpuExecutable so we need to
   // give them an external linkage.  Not all of their uses are visible in
   // the LLVM IR so we can't give then a linkage that merely preserves their
@@ -95,6 +97,28 @@ void IrEmitterContext::emit_constant(int64_t num_elements,
       /*AddressSpace=*/addrspace,
       /*isExternallyInitialized=*/false);
   global_for_const->setAlignment(llvm::Align(kConstantBufferAlignBytes));
+
+  if (is_spir) {
+    // SYCL: Add spirv.Decorations for global variable. See document about the
+    // annotation:
+    // https://github.com/intel/llvm/blob/sycl/sycl/doc/design/spirv-extensions/SPV_INTEL_global_variable_decorations.asciidoc
+    llvm::LLVMContext& context = llvm_module_->getContext();
+    llvm::SmallVector<llvm::Metadata*, 4> metadatas;
+    std::vector<llvm::Metadata*> ops;
+
+    auto* kind = llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(context), /*IDecHostAccessINTEL*/ 6147));
+    ops.push_back(kind);
+    auto* const acc_mode = llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(context), /*AccessMode*/ 2));
+    ops.push_back(acc_mode);
+    ops.push_back(llvm::MDString::get(context, symbol_name));
+    metadatas.push_back(llvm::MDNode::get(context, ops));
+
+    llvm::MDNode* md_list = llvm::MDNode::get(context, metadatas);
+    global_for_const->setMetadata("spirv.Decorations", md_list);
+  }
+
   llvm_module_constants()->insertGlobalVariable(global_for_const);
 
   info.symbol_name.assign(symbol_name);

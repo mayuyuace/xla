@@ -628,11 +628,17 @@ GpuExecutable::ResolveConstantGlobals(se::Stream* stream) {
   // The CUDA driver isn't able to load a PTX and a binary which are both empty.
   // It's okay if we skip loading in this case; if the module isn't loaded, all
   // symbol lookups will fail, just as they should for an empty module.
+#if !TENSORFLOW_USE_SYCL
   if (!(executor->GetPlatform()->id() ==
             stream_executor::cuda::kCudaPlatformId &&
         binary().empty() && text().empty())) {
     TF_RETURN_IF_ERROR(executor->LoadModule(module_spec, &module_handle));
   }
+#else
+  if (module_spec.has_cuda_cubin_in_memory()) {
+    TF_RETURN_IF_ERROR(executor->LoadModule(module_spec, &module_handle));
+  }
+#endif
 
   // A flag signalling if constant initialization submitted memcpy operations
   // to the `stream`.
@@ -660,19 +666,29 @@ GpuExecutable::ResolveConstantGlobals(se::Stream* stream) {
         submitted_mem_copies = true;
       }
     } else {
-      // The constant was not defined in the PTX and therefore must be both
-      // allocated and initialized by XLA here.
-      CHECK(!info.content.span().empty());
-
-      TF_ASSIGN_OR_RETURN(auto shared, executor->CreateOrShareConstant(
+      if (info.content.span().empty()) {
+#if TENSORFLOW_USE_SYCL
+        // LLVM module contains the const variable, but it still fails to look
+        // up symbol. So allocate an empty buffer here.
+        void* opaque = nullptr;
+        size_t bytes = 0;
+        global = se::DeviceMemoryBase(opaque, bytes);
+#else
+        // The constant was not defined in the PTX and therefore must be both
+        // allocated and initialized by XLA here.
+        LOG(FATAL) << "Check failed: !info.content.span().empty() ";
+#endif
+      } else {
+        TF_ASSIGN_OR_RETURN(auto shared, executor->CreateOrShareConstant(
                                            stream, info.content.span()));
-      global = *shared;
-      VLOG(3) << "Allocated (or shared) global " << info.symbol_name << " at "
-              << global.opaque();
-      // XLA will continue to own this global at least until this executable is
-      // destroyed (longer if another, longer-lived executable shares the same
-      // constant).
-      shared_constants_.push_back(std::move(shared));
+        global = *shared;
+        VLOG(3) << "Allocated (or shared) global " << info.symbol_name << " at "
+                << global.opaque();
+        // XLA will continue to own this global at least until this executable is
+        // destroyed (longer if another, longer-lived executable shares the same
+        // constant).
+        shared_constants_.push_back(std::move(shared));
+      }
     }
 
     if (info.allocation_index != -1) {
