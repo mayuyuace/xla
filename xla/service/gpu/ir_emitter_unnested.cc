@@ -96,7 +96,6 @@ limitations under the License.
 #include "xla/service/gpu/fusions/fusion_emitter.h"
 #include "xla/service/gpu/fusions/fusions.h"
 #include "xla/service/gpu/fusions/thunk_util.h"
-#include "xla/service/gpu/fusions/triton/triton_fusion_emitter.h"
 #include "xla/service/gpu/gpu_asm_opts_util.h"
 #include "xla/service/gpu/gpu_conv_runner.h"
 #include "xla/service/gpu/gpu_fused_mha_runner.h"
@@ -171,6 +170,7 @@ limitations under the License.
 #include "triton/Dialect/Triton/IR/Dialect.h"
 
 #if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#include "xla/service/gpu/fusions/triton/triton_fusion_emitter.h"
 #include "xla/service/gpu/runtime/cholesky_thunk.h"
 #include "xla/service/gpu/runtime/cub_sort_thunk.h"
 #include "xla/service/gpu/runtime/triangular_solve_thunk.h"

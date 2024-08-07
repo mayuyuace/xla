@@ -38,7 +38,6 @@ limitations under the License.
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_instructions.h"
 #include "xla/service/gpu/fusions/fusion_emitter.h"
-#include "xla/service/gpu/fusions/triton/triton_fusion_emitter.h"
 #include "xla/service/gpu/hlo_traversal.h"
 #include "xla/service/gpu/ir_emission_utils.h"
 #include "xla/service/gpu/ir_emitter_context.h"
@@ -56,9 +55,16 @@ limitations under the License.
 #include "xla/stream_executor/device_description.h"
 #include "tsl/platform/statusor.h"
 
+#if !TENSORFLOW_USE_SYCL
+#include "xla/service/gpu/fusions/triton/triton_fusion_emitter.h"
+#else
+#include "absl/status/status.h"
+#endif
+
 namespace xla {
 namespace gpu {
 
+#if !TENSORFLOW_USE_SYCL
 absl::StatusOr<TritonWrapperResult>
 TritonFusion::GenerateTritonKernelAndWrapper(
     const HloFusionInstruction& fusion, absl::string_view impl_fn_name,
@@ -105,10 +111,12 @@ TritonFusion::GenerateTritonKernelAndWrapper(
 
   return triton_wrapper_result;
 };
+#endif // TENSORFLOW_USE_SYCL
 
 absl::StatusOr<FusionEmissionResult> TritonFusion::Emit(
     IrEmitterContext& ir_emitter_context,
     const HloFusionInstruction& fusion) const {
+#if !TENSORFLOW_USE_SYCL
   llvm::IRBuilder builder(ir_emitter_context.llvm_module()->getContext());
   VLOG(3) << fusion.ToString();
   std::string suggested_kernel_name = std::string(fusion.name());
@@ -215,6 +223,9 @@ absl::StatusOr<FusionEmissionResult> TritonFusion::Emit(
       entry->launch_dimensions, entry->cluster_dim, entry->shmem_bytes));
 
   return result;
+#else
+  return absl::UnimplementedError("SYCL does not surpport Triton");
+#endif // TENSORFLOW_USE_SYCL
 }
 
 std::optional<TritonFusion::LaunchConfig> TritonFusion::launch_config() const {

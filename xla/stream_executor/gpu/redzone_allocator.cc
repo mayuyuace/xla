@@ -255,6 +255,7 @@ static absl::StatusOr<RedzoneCheckStatus> CheckRedzonesForBuffer(
 }
 
 absl::StatusOr<RedzoneCheckStatus> RedzoneAllocator::CheckRedzones() const {
+#if !TENSORFLOW_USE_SYCL
   StreamExecutor* executor = stream_->parent();
 
   TF_ASSIGN_OR_RETURN(
@@ -279,6 +280,10 @@ absl::StatusOr<RedzoneCheckStatus> RedzoneAllocator::CheckRedzones() const {
   }
 
   return RedzoneCheckStatus::OK();
+#else  // TENSORFLOW_USE_SYCL
+  return absl::InternalError(
+    "Feature not supported on SYCL platform (CheckRedzones)");
+#endif
 }
 
 std::string RedzoneCheckStatus::RedzoneFailureMsg() const {

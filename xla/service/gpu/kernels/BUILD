@@ -7,7 +7,7 @@ load(
 )
 load("//xla:xla.bzl", "xla_cc_binary")
 load("//xla/service/gpu:build_defs.bzl", "gpu_kernel_library")
-load("//xla/stream_executor:build_defs.bzl", "if_gpu_is_configured")
+load("//xla/stream_executor:build_defs.bzl", "if_cuda_or_rocm", "if_gpu_is_configured")
 load("//xla/tests:build_defs.bzl", "xla_test")
 load("//xla/tsl:tsl.bzl", "if_windows")
 
@@ -154,7 +154,7 @@ cc_library(
         "@tsl//tsl/platform:errors",
         "@tsl//tsl/platform:logging",
         "@tsl//tsl/platform:statusor",
-    ] + if_gpu_is_configured([
+    ] + if_cuda_or_rocm([
         ":topk_kernel_gpu",
     ]),
 )
@@ -219,7 +219,7 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@tsl//tsl/platform:statusor",
-    ] + if_gpu_is_configured([
+    ] + if_cuda_or_rocm([
         ":topk_kernel_gpu",
     ]),
 )

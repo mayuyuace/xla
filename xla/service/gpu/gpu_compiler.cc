@@ -175,7 +175,6 @@ limitations under the License.
 #include "xla/service/gpu/topk_specializer.h"
 #include "xla/service/gpu/topk_splitter.h"
 #include "xla/service/gpu/tree_reduction_rewriter.h"
-#include "xla/service/gpu/triton_fusion_numerics_verifier.h"
 #include "xla/service/hlo.pb.h"
 #include "xla/service/hlo_computation_deduplicator.h"
 #include "xla/service/hlo_constant_folding.h"
@@ -256,6 +255,10 @@ limitations under the License.
 #ifdef PLATFORM_GOOGLE
 #include "xla/hlo/experimental/auto_sharding/auto_sharding.h"
 #endif  // PLATFORM_GOOGLE
+
+#if !TENSORFLOW_USE_SYCL
+#include "xla/service/gpu/triton_fusion_numerics_verifier.h"
+#endif  // TENSORFLOW_USE_SYCL
 
 namespace xla {
 namespace gpu {
@@ -1155,6 +1158,7 @@ absl::Status RunPostFusionVerificationPasses(
     HloModule* hlo_module, se::StreamExecutor* stream_exec,
     const GpuCompiler::CompileOptions& options,
     const Compiler::TargetConfig& gpu_target_config) {
+#if !TENSORFLOW_USE_SYCL
   HloPassPipeline pipeline("post-fusion-verification-pipeline optimization");
 
   if (hlo_module->config()
@@ -1169,6 +1173,10 @@ absl::Status RunPostFusionVerificationPasses(
   }
 
   return pipeline.Run(hlo_module).status();
+#else
+  // SYCL does not support Triton
+  return absl::OkStatus();
+#endif //TENSORFLOW_USE_SYCL
 }
 
 }  // namespace

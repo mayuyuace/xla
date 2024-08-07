@@ -23,12 +23,17 @@ limitations under the License.
 #include "mlir/IR/MLIRContext.h"
 #include "xla/hlo/ir/hlo_instructions.h"
 #include "xla/service/gpu/fusions/fusion_emitter.h"
-#include "xla/service/gpu/fusions/triton/triton_fusion_emitter.h"
 #include "xla/service/gpu/hlo_fusion_analysis.h"
 #include "xla/service/gpu/ir_emitter_context.h"
 #include "xla/service/gpu/launch_dimensions.h"
 #include "xla/service/gpu/model/tiled_hlo_computation.h"
 #include "xla/stream_executor/device_description.h"
+
+#if !TENSORFLOW_USE_SYCL
+#include "xla/service/gpu/fusions/triton/triton_fusion_emitter.h"
+#else
+#include "absl/status/status.h"
+#endif // TENSORFLOW_USE_SYCL
 
 namespace xla {
 namespace gpu {
@@ -55,10 +60,12 @@ class TritonFusion : public FusionInterface {
   // Generates a Triton kernel for the given fusion into the provided LLVM
   // module, and returns the `TritonWrapperResult` corresponding to the
   // generated kernel.
+#if !TENSORFLOW_USE_SYCL
   absl::StatusOr<TritonWrapperResult> GenerateTritonKernelAndWrapper(
       const HloFusionInstruction& fusion, absl::string_view impl_fn_name,
       const se::DeviceDescription& device_info, llvm::Module* llvm_module,
       mlir::MLIRContext* mlir_context) const;
+#endif // TENSORFLOW_USE_SYCL
 
  private:
   const HloFusionAnalysis& analysis_;
